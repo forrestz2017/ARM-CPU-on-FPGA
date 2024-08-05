@@ -1,6 +1,5 @@
 // ARM CPU Team + Joseph Decuir
 // 4/24/24		forked by Majeedah & Joe, edited by JO
-// 6/26/2024 working on extending state machine by Forrest Zhang
 // start: ARM_L4DP, from 2020
 // add: GPIO access
 // add: single step and clock choice
@@ -18,6 +17,9 @@
 // revise the state machine to demultiplex INSTR word to 4 bytes on GPIO port
 // output the same signals to the HEX displays
 // test on LA
+
+//last modified 7/3 - Extending state machine, - Forrest Zhang
+
 
 module ARM_DE10(
 	input ADC_CLK_10,	MAX10_CLK1_50,	MAX10_CLK2_50,
@@ -42,9 +44,6 @@ initial PC = 32'b0;
 
 // start with timing: reset, clock, word clock
 // define simple asynchrous reset, from KEY[0] (later from ARM Bus bit)
-
-//Automatic Clock Generation, key0 toggles and select manual/auto clock
-//-----------------------------------------------------
 assign reset = ~KEY[0];		// manual reset
 
 // deterimine clocking: manual or automatic
@@ -73,7 +72,11 @@ end		//end blk
 // SW[9] chooses clock source: manual or automatic
 always @(*) if(SW[9]) clk = ACLK;
 	else clk = DCLK;
-//--------------------------------------------------------
+
+// additional comments and section splitting lines - Forrest Zhang, 6/29
+// Working on extending states
+
+//----------------------------------------------------------------------------
 
 // move mem state machine to main module
 // sort states to state management and state implementation
@@ -88,7 +91,9 @@ always @(*) if(SW[9]) clk = ACLK;
 always @(posedge clk) begin
 if(reset) WBus <= 0;
 WBus <= WBus + 1;
-if (WBus==3) WBus <= 0;	// safety reset
+if (WBus==7) WBus <= 0;	// safety reset, 
+//added from 3 to 7 states, 4 more states to display read or write memory address and data - Forrest zhang
+//
 end
 
 always @(WBus) begin
@@ -113,19 +118,27 @@ case (WBus)
 endcase		// end of word state machine
 end			// end word always block
 
-//add 4 more states to LDR and RDR, exposing ~
-// ------------------------------------------------------------------
-
-
-
-
-
-
-
-
-//-------------------------------------------------------------------
+//extension of state machines - Forrest Zhang, 7/3
+//extension begin---------------------------------------
+4: begin
+   ARMGPIO[23:8] <= DataAdr[15:0];
+	ARMGPIO[7:0] <= (MemWrite ? WriteData[7:0]:ReadData[7:0]);
+	end
+5: begin
+	ARMGPIO[23:8] <= DataAdr [15:0] + 1;
+	ARMGPIO[7:0] <= (MemWrite ? WriteData[15:8]:ReadData[15:8]);
+	end
+6: begin
+	ARMGPIO[23:8] <= DataAdr [15:0] + 2;
+	ARMGPIO[7:0] <= (MemWrite ? WriteData[23:16]:ReadData[23:16]);
+	end
+7: begin
+	ARMGPIO[23:8] <= DataAdr [15:0] + 3;
+	ARMGPIO[7:0] <= (MemWrite ? WriteData[31:24]:ReadData[31:24]);
+	end
+//extension ends---------------------------------------
 //instantiate arm module including imem (initialized) and dmem
-arm_L4DP system(WClk, reset, WriteData, DataAdr, MemWrite, Instr, PC); 
+arm_L4DP system(WClk, reset, WriteData, DataAdr, ReadData, MemWrite, Instr, PC); //added ReadData on 7/3 - Forrest Zhang
 
 // 	 ARMBusGPIO[25:24] not defined yet
 assign ARMGPIO[26] = ~WR;
@@ -170,7 +183,7 @@ seg7 D0(ARMGPIO[3:0], HEX0);	// "				*/
 endmodule // ARM_DE10
 
 module arm_L4DP(input  logic clk, reset, 	// rename from top
-           output logic [31:0] WriteData, DataAdr, 
+           output logic [31:0] WriteData, DataAdr, ReadData   //added ReadData, 7/3 - Forrest Zhang
            output logic        MemWrite,
 			  output logic [31:0] Instr, PC);
 
