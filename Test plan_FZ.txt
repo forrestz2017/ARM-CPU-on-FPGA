@@ -1,0 +1,60 @@
+Test plan for ARM core and eeprom 
+-by Forrest Zhang, 8/5/2024
+
+Here's the complete steps for testing both ARM Core and EEPROM
+1. Synthesize both ARM.sv and EEPROM.sv to FPGA
+2. Flash the EEPROM with file "TestVector.txt" using usb Progammer and software
+3. Use Verilog simulator (ModelSim) for simulating test bench
+4. Use waveform viewer to  check the signals during the simulation.
+5. View results on both DE-10 Hex display and Logic Analyzer trace
+
+The following are expected results on HEX display and Logic analyzer:
+-----------------------------------------------------------------------------------------------------
+DE-10 HEX Display:
+
+1. Initial State: The HEX display shows default values (usually 0s) until the ARM core begins execution.
+MOV and ADD Operations:
+
+2. The immediate values 1 and 2 are moved into R0 and R1 respectively. The result of the ADD operation (R2 = 3) might be displayed on the HEX display if the ARM core is designed to output register values.
+
+3. Memory Operations: The address 0x1000 is loaded into R3. The value 3 (from R2) is stored at the address 0x1000 and then loaded into R4.
+
+4. Looping: The core enters an infinite loop (B .), and the HEX display will show the final state of the outputs just before the loop.
+
+---------------------------------------------------------------------------------------------
+On Logic Analyzer Traces:
+Connecting a logic analyzer to appropriate signals will show:
+
+1. Instruction Fetch: Traces showing the program counter (PC) value and the corresponding instruction being fetched.
+2. Register Updates: Changes in the values of R0, R1, R2, R3, and R4 as the instructions execute.
+These can be monitored by connecting the logic analyzer to the relevant signals in your ARM core.
+3. Memory Access: The address and data buses showing the memory write (STR) and read (LDR) operations.
+4. Control Signals: The state of control signals like write_enable, read_enable, and ready.
+
+Example of a Logic Analyzer Trace
+
+Cycle 0-5:
+
+PC = 0: Fetch MOV R0, #1
+PC = 4: Fetch MOV R1, #2
+PC = 8: Fetch ADD R2, R0, R1
+R0 = 1, R1 = 2, R2 = 3
+
+Cycle 6-10:
+
+PC = 12: Fetch LDR R3, =0x1000
+R3 = 0x1000
+
+Cycle 11-15:
+
+PC = 16: Fetch STR R2, [R3]
+Memory[0x1000] = 3
+
+Cycle 16-20:
+
+PC = 20: Fetch LDR R4, [R3]
+R4 = 3
+
+Cycle 21+:
+
+PC = 24: Fetch B . (infinite loop)

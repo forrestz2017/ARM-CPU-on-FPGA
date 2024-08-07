@@ -1,0 +1,11 @@
+// ARM test Vector
+//Programmer: Forrest Zhang
+//Last Modified: 8/6/2024
+
+MOV R0, #1      // Move the immediate value 1 into register R0
+MOV R1, #2      // Move the immediate value 2 into register R1
+ADD R2, R0, R1  // Add the values in R0 and R1, store the result in R2
+LDR R3, =0x1000 // Load the address 0x1000 into R3 (for memory operations)
+STR R2, [R3]    // Store the value in R2 to the memory address in R3
+LDR R4, [R3]    // Load the value from the memory address in R3 into R4
+B .             // Infinite loop to halt the program
